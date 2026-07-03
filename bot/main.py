@@ -17,8 +17,8 @@ def should_handle_message(message: dict, bot_email: str) -> bool:
         return False
     if message.get("type") == "private":
         return True
-    content = message.get("content", "")
-    return "@linear" in content.lower() or "@**linear**" in content.lower()
+    content = message.get("content", "").lower()
+    return "@linear" in content or "linear|" in content
 
 
 def build_reply(message: dict, result: CommandResult) -> dict:
@@ -57,14 +57,12 @@ def main() -> None:
 
     logger.info("Starting Zulip Linear bot on %s", settings.zulip_site)
 
-    def handle_event(event: dict) -> None:
-        if event.get("type") != "message":
-            return
-        message = event["message"]
+    def handle_message(message: dict) -> None:
         if not should_handle_message(message, settings.zulip_email):
             return
 
         raw = strip_bot_mention(message.get("content", ""), settings.zulip_bot_name)
+        logger.info("Handling command from %s: %s", message.get("sender_email"), raw[:120])
         try:
             command, args = parse_command(raw)
             result = handle_command(linear_client, command, args)
@@ -74,7 +72,7 @@ def main() -> None:
 
         zulip_client.send_message(build_reply(message, result))
 
-    zulip_client.call_on_each_message(handle_event)
+    zulip_client.call_on_each_message(handle_message)
 
 
 if __name__ == "__main__":
