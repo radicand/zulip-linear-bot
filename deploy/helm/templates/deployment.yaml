@@ -1,0 +1,58 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "zulip-linear-bot.fullname" . }}
+  labels:
+    {{- include "zulip-linear-bot.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "zulip-linear-bot.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "zulip-linear-bot.selectorLabels" . | nindent 8 }}
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+    spec:
+      serviceAccountName: {{ default (include "zulip-linear-bot.fullname" .) .Values.serviceAccount.name }}
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: bot
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          env:
+            - name: ZULIP_EMAIL
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.existingSecret }}
+                  key: zulip_email
+            - name: ZULIP_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.existingSecret }}
+                  key: zulip_api_key
+            - name: ZULIP_SITE
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.existingSecret }}
+                  key: zulip_site
+            - name: ZULIP_BOT_NAME
+              value: {{ .Values.config.zulipBotName | quote }}
+            - name: LINEAR_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.existingSecret }}
+                  key: linear_api_key
+            - name: LINEAR_TEAM_ID
+              value: {{ required "config.linearTeamId is required" .Values.config.linearTeamId | quote }}
+            - name: LINEAR_TEAM_KEY
+              value: {{ .Values.config.linearTeamKey | quote }}
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
