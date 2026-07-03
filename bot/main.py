@@ -59,6 +59,12 @@ def main() -> None:
     logger.info("Starting Zulip Linear bot on %s", settings.zulip_site)
 
     def handle_message(message: dict) -> None:
+        logger.info(
+            "Received message %s from %s in %s",
+            message.get("id"),
+            message.get("sender_email"),
+            message.get("display_recipient") or "dm",
+        )
         if not should_handle_message(message, settings.zulip_email):
             return
 
