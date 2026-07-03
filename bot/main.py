@@ -19,7 +19,12 @@ def should_handle_message(message: dict, bot_email: str) -> bool:
     if message.get("type") == "private":
         return True
     content = message.get("content", "").lower()
-    return "@linear" in content or "linear|" in content
+    return (
+        "@linear" in content
+        or "**linear**" in content
+        or "linear|" in content
+        or "user-mention" in content and "linear" in content
+    )
 
 
 def build_reply(message: dict, result: CommandResult) -> dict:
@@ -60,12 +65,14 @@ def main() -> None:
 
     def handle_message(message: dict) -> None:
         logger.info(
-            "Received message %s from %s in %s",
+            "Received message %s from %s in %s: %s",
             message.get("id"),
             message.get("sender_email"),
             message.get("display_recipient") or "dm",
+            message.get("content", "")[:160],
         )
         if not should_handle_message(message, settings.zulip_email):
+            logger.info("Ignoring message %s (no bot mention)", message.get("id"))
             return
 
         raw = strip_bot_mention(message.get("content", ""), settings.zulip_bot_name)

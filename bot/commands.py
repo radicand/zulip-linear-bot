@@ -17,8 +17,9 @@ class CommandResult:
 def strip_bot_mention(content: str, bot_name: str) -> str:
     patterns = [
         rf"@\*\*{re.escape(bot_name)}\*\*",
-        rf"@{re.escape(bot_name)}",
+        rf"@\*\*[^|]+\|[^\*]+\*\*",
         rf"@_\*\*[^|]+\|[^\*]+\*\*",
+        rf"@{re.escape(bot_name)}",
     ]
     cleaned = content
     for pattern in patterns:
