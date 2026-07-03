@@ -15,8 +15,15 @@ class CommandResult:
 
 
 def strip_bot_mention(content: str, bot_name: str) -> str:
-    pattern = re.compile(rf"@\*\*{re.escape(bot_name)}\*\*|@{re.escape(bot_name)}", re.IGNORECASE)
-    return pattern.sub("", content).strip()
+    patterns = [
+        rf"@\*\*{re.escape(bot_name)}\*\*",
+        rf"@{re.escape(bot_name)}",
+        rf"@_\*\*[^|]+\|[^\*]+\*\*",
+    ]
+    cleaned = content
+    for pattern in patterns:
+        cleaned = re.sub(pattern, "", cleaned, flags=re.IGNORECASE)
+    return cleaned.strip()
 
 
 def parse_command(text: str) -> tuple[str, str]:

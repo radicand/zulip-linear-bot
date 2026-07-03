@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import logging
 import sys
+import time
 
 import zulip
 
@@ -70,9 +71,16 @@ def main() -> None:
             logger.exception("Command failed")
             result = CommandResult(f":warning: {exc}")
 
-        zulip_client.send_message(build_reply(message, result))
+        response = zulip_client.send_message(build_reply(message, result))
+        if response.get("result") != "success":
+            logger.error("Failed to send Zulip reply: %s", response)
 
-    zulip_client.call_on_each_message(handle_message)
+    while True:
+        try:
+            zulip_client.call_on_each_message(handle_message)
+        except Exception:
+            logger.exception("Bot loop crashed; restarting in 5 seconds")
+            time.sleep(5)
 
 
 if __name__ == "__main__":
