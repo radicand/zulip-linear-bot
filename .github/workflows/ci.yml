@@ -11,13 +11,26 @@ permissions:
   packages: write
 
 jobs:
-  build:
+  test:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install
+        run: |
+          python -m pip install --upgrade pip
+          pip install '.[dev]'
+      - name: Test
+        run: pytest
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+  build:
+    needs: test
+    # Native arm64 runner — no QEMU emulation, ~10x faster than cross-build.
+    runs-on: ubuntu-24.04-arm
+    steps:
+      - uses: actions/checkout@v4
 
       - name: Log in to GHCR
         uses: docker/login-action@v3
@@ -40,13 +53,7 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           context: .
-          platforms: linux/amd64,linux/arm64
+          platforms: linux/arm64
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-
-      - name: Run tests
-        run: |
-          python -m pip install --upgrade pip
-          pip install '.[dev]'
-          pytest
